@@ -1820,7 +1820,7 @@ async function aiSend(){
       body: JSON.stringify({ message: msg })
     });
 
-    const raw = await r.text(); // 👈 önce text al
+    const raw = await r.text();
     let data = null;
     try { data = JSON.parse(raw); } catch { data = null; }
 
@@ -1828,16 +1828,21 @@ async function aiSend(){
     const body = document.getElementById("aiChatBody");
     if(body && body.lastChild) body.removeChild(body.lastChild);
 
-    // 👇 burada her şeyi yakala
     if(!r.ok){
-      const errMsg = data?.error?.message || data?.error || raw || `HTTP ${r.status}`;
+      const errMsg =
+        (data && (data.error?.message || data.error)) ||
+        raw ||
+        `HTTP ${r.status}`;
       aiAddMsg(`💔 Hata: ${errMsg}`, "bot");
       return;
     }
 
-    const reply = data?.reply || data?.choices?.[0]?.message?.content || raw || "Bir şeyler ters gitti 💔";
-    aiAddMsg(String(reply).trim(), "bot");
+    const reply =
+      (data && (data.reply || data.choices?.[0]?.message?.content)) ||
+      raw ||
+      "Bir şeyler ters gitti 💔";
 
+    aiAddMsg(String(reply).trim(), "bot");
   }catch(e){
     const body = document.getElementById("aiChatBody");
     if(body && body.lastChild) body.removeChild(body.lastChild);
@@ -1845,30 +1850,8 @@ async function aiSend(){
   }finally{
     if(btn) btn.disabled = false;
   }
-};
-
-      const data = await r.json().catch(() => ({}));
-
-      // son “Yazıyorum…” mesajını kaldır
-      const body = document.getElementById("aiChatBody");
-      if(body && body.lastChild) body.removeChild(body.lastChild);
-
-      let reply = "Bir şeyler ters gitti 💔";
-
-if (data) {
-  if (data.reply) reply = String(data.reply);
-  else if (data.error) reply = "💔 " + data.error;
-  else reply = JSON.stringify(data);
 }
-      aiAddMsg(reply, "bot");
-    }catch(e){
-      const body = document.getElementById("aiChatBody");
-      if(body && body.lastChild) body.removeChild(body.lastChild);
-      aiAddMsg("Bağlantı hatası 💔", "bot");
-    }finally{
-      if(btn) btn.disabled = false;
-    }
-  }
+
 </script>
 
 <!-- 💬 Endam Bot (Sağ Alt) -->
