@@ -1801,24 +1801,51 @@
     aiAddMsg("Merhaba 💗 Ben Endam Bot. Yaz bana…", "bot");
   }
 
-  async function aiSend(){
-    const inp = document.getElementById("aiInput");
-    const btn = document.getElementById("aiSend");
-    const msg = (inp?.value || "").trim();
-    if(!msg) return;
+async function aiSend(){
+  const inp = document.getElementById("aiInput");
+  const btn = document.getElementById("aiSend");
+  const msg = (inp?.value || "").trim();
+  if(!msg) return;
 
-    aiAddMsg(msg, "user");
-    if(inp) inp.value = "";
+  aiAddMsg(msg, "user");
+  if(inp) inp.value = "";
 
-    if(btn) btn.disabled = true;
-    aiAddMsg("Yazıyorum…", "bot");
+  if(btn) btn.disabled = true;
+  aiAddMsg("Yazıyorum…", "bot");
 
-    try{
-      const r = await fetch("/.netlify/functions/endam-bot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg })
-      });
+  try{
+    const r = await fetch("/.netlify/functions/endam-bot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    const raw = await r.text(); // 👈 önce text al
+    let data = null;
+    try { data = JSON.parse(raw); } catch { data = null; }
+
+    // “Yazıyorum…” mesajını kaldır
+    const body = document.getElementById("aiChatBody");
+    if(body && body.lastChild) body.removeChild(body.lastChild);
+
+    // 👇 burada her şeyi yakala
+    if(!r.ok){
+      const errMsg = data?.error?.message || data?.error || raw || `HTTP ${r.status}`;
+      aiAddMsg(`💔 Hata: ${errMsg}`, "bot");
+      return;
+    }
+
+    const reply = data?.reply || data?.choices?.[0]?.message?.content || raw || "Bir şeyler ters gitti 💔";
+    aiAddMsg(String(reply).trim(), "bot");
+
+  }catch(e){
+    const body = document.getElementById("aiChatBody");
+    if(body && body.lastChild) body.removeChild(body.lastChild);
+    aiAddMsg("💔 Bağlantı hatası", "bot");
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+};
 
       const data = await r.json().catch(() => ({}));
 
