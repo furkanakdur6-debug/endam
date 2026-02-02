@@ -1826,7 +1826,13 @@
       const body = document.getElementById("aiChatBody");
       if(body && body.lastChild) body.removeChild(body.lastChild);
 
-      const reply = (data && data.reply) ? String(data.reply) : "Bir şeyler ters gitti 💔";
+      let reply = "Bir şeyler ters gitti 💔";
+
+if (data) {
+  if (data.reply) reply = String(data.reply);
+  else if (data.error) reply = "💔 " + data.error;
+  else reply = JSON.stringify(data);
+}
       aiAddMsg(reply, "bot");
     }catch(e){
       const body = document.getElementById("aiChatBody");
