@@ -1,3 +1,6 @@
+console.log("RUNNING endam-bot.js v1");
+
+
 // netlify/functions/endam-bot.js
 // ✅ Netlify Functions için en uyumlu format: CommonJS exports.handler
 
