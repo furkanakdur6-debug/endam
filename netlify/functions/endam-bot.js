@@ -1,73 +1,90 @@
-export async function handler(event) {
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: "POST only" }),
-    };
-  }
+// netlify/functions/endam-bot.js
+// ✅ Netlify Functions için en uyumlu format: CommonJS exports.handler
 
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json; charset=utf-8",
+};
+
+exports.handler = async (event) => {
   try {
-    const { message } = JSON.parse(event.body || "{}");
+    if (event.httpMethod === "OPTIONS") {
+      return { statusCode: 204, headers, body: "" };
+    }
 
-    if (!message) {
+    if (event.httpMethod !== "POST") {
+      return { statusCode: 405, headers, body: JSON.stringify({ error: "POST only" }) };
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({ reply: "Bana bir şey yaz 💗" }),
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "Missing OPENAI_API_KEY" }),
       };
     }
 
+    let body;
+    try {
+      body = JSON.parse(event.body || "{}");
+    } catch {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid JSON" }) };
+    }
+
+    const message = String(body.message || "").trim();
+    if (!message) {
+      return { statusCode: 200, headers, body: JSON.stringify({ reply: "Bir şey yaz 💗" }) };
+    }
+
     const systemPrompt = `
-Sen Endam Bot’sun.
-Türkçe konuş.
+Sen Endam Bot’sun. Türkçe konuş.
 Sıcak, samimi, romantik bir üslubun var.
 Kullanıcı ne yazarsa yazsın cevap vermeye çalış.
-Kısa soruya kısa, uzun soruya detaylı cevap ver.
 Emoji kullan ama abartma.
-Gerektiğinde sitenin bölümlerini hatırlat:
-- Fotoğraflarımız
-- Şarkılarımız
-- Hikâyemiz
-- Çark Oyunu
-- Küçük sürpriz
-- Evim
-Kullanıcıya asla soğuk davranma.
 `.trim();
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // ✅ OpenAI Chat Completions
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: message }
+          { role: "user", content: message },
         ],
         temperature: 0.8,
-        max_tokens: 500,
+        max_tokens: 350,
       }),
     });
 
-    const data = await response.json();
+    const data = await resp.json().catch(() => ({}));
 
-    const reply =
-      data.choices?.[0]?.message?.content ||
-      "Bir şey ters gitti ama buradayım 💗";
+    // ✅ OpenAI hata dönerse sebebi kullanıcıya (gerekirse) gösterecek şekilde dön
+    if (!resp.ok) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: "OpenAI error",
+          details: data,
+        }),
+      };
+    }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ reply }),
-    };
-
+    const reply = data?.choices?.[0]?.message?.content?.trim() || "💗";
+    return { statusCode: 200, headers, body: JSON.stringify({ reply }) };
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        reply: "Bir şey ters gitti 😅 ama seni bırakmam 💗",
-        error: err.message,
-      }),
+      headers,
+      body: JSON.stringify({ error: "Server error", details: String(err) }),
     };
   }
-}
+};
