@@ -995,20 +995,40 @@
   const DOGRU_KULLANICI = "Endam";
   const DOGRU_SIFRE = "21101998";
 
+  // ✅ DÜZELTME: kullanıcı adı eşleşmesi için normalize (büyük/küçük harf + TR i/İ)
+  function norm(str){
+    return (str || "")
+      .trim()
+      .toLocaleLowerCase("tr-TR")
+      .replace(/İ/g, "i")
+      .replace(/I/g, "ı");
+  }
+
   function girisKontrol(){
-    const u = (document.getElementById("kullanici").value || "").trim();
+    const u = norm(document.getElementById("kullanici").value);
     const p = (document.getElementById("sifre").value || "").trim();
     const fb = document.getElementById("loginFeedback");
 
-    if(u === DOGRU_KULLANICI && p === DOGRU_SIFRE){
+    const dogruUser = norm(DOGRU_KULLANICI);
+    const dogruPass = String(DOGRU_SIFRE).trim();
+
+    if(u === dogruUser && p === dogruPass){
       fb.textContent = "";
       document.getElementById("giris").style.display = "none";
       document.getElementById("basardin").style.display = "flex";
       document.getElementById("basardinYazi").textContent = "Hoş geldin Endam ❤️";
     } else {
-      fb.textContent = "Kalbim kırıldı 💔";
+      fb.textContent = "Kullanıcı adı / şifre yanlış 💔";
     }
   }
+
+  // ✅ DÜZELTME: input içindeyken Enter ile giriş
+  document.getElementById("kullanici").addEventListener("keydown", (e) => {
+    if(e.key === "Enter") girisKontrol();
+  });
+  document.getElementById("sifre").addEventListener("keydown", (e) => {
+    if(e.key === "Enter") girisKontrol();
+  });
 
   function siteyeGir(){
     document.getElementById("basardin").style.display = "none";
