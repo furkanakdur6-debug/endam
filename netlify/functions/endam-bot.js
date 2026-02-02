@@ -70,16 +70,17 @@ Emoji kullan ama abartma.
     const data = await resp.json().catch(() => ({}));
 
     // ✅ OpenAI hata dönerse sebebi kullanıcıya (gerekirse) gösterecek şekilde dön
-    if (!resp.ok) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: "OpenAI error",
-          details: data,
-        }),
-      };
-    }
+   if (!resp.ok) {
+  const msg =
+    data?.error?.message ||
+    data?.message ||
+    "OpenAI hata verdi. (API key / limit / model kontrol et)";
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ reply: "💔 " + msg }),
+  };
+}
 
     const reply = data?.choices?.[0]?.message?.content?.trim() || "💗";
     return { statusCode: 200, headers, body: JSON.stringify({ reply }) };
